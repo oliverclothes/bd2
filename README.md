@@ -4,7 +4,7 @@ For this jam, the game has to be 64x64 resolution.
 
 I basically was having issues with Godot (maybe I don't understand how to use it for low res).
 
-![image](https://github.com/user-attachments/assets/8da74272-9d9a-42f7-9687-86f6b76d3c8e)
+![image](screenshot.png)
 
 Asset sources:
 - Music from Olivier Bérubé: [https://opengameart.org/content/pirate-theme]
