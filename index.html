@@ -1,0 +1,253 @@
+<html>
+    <head>
+
+        <style>
+            html, body {
+                width:  100%;
+                height: 100%;
+                margin: 0;
+            }
+            body {
+                background: linear-gradient(to top, #033, #040);
+                /* background-color: rgb(84, 0, 0); */
+                image-rendering: pixelated;
+            }
+            .container {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            canvas {
+                background-color: black;
+                width: min(100vh, 100vw);
+                height: min(100vh, 100vw);
+            }
+        </style>
+    
+    </head>
+    <body>
+        <div class="container">
+            <canvas id="canvas1" class="item" width="64" height="64"></canvas>
+        </div>
+        
+    <script src="library/asset_loader.js"></script>
+    <script src="library/controls.js"></script>
+    <script src="library/sprite.js"></script>
+    <script src="library/tiling.js"></script>
+    <script src="library/font.js"></script>
+    <script src="library/tile9.js"></script>
+    <script src="library/text_box.js"></script>
+    <script src="library/camera.js"></script>
+    <script src="library/poker_cards.js"></script>
+    <script>
+    
+        const ctx = document.getElementById("canvas1").getContext("2d")
+
+        var loader = new asset_loader()
+        var ghosties, tilemap, main_font, message_border, top_box, mid_box, cards
+        var bgm, click_sound, card_sound
+        var boat_anim_poses = [
+            [0, 0],
+            [0, 0],
+            [-1, 0],
+            [-1, 0],
+            [-2, 0],
+            [-2, -1],
+            [-3, -2],
+            [-4, -2],
+            [-3, -1],
+            [-2, -1],
+            [-1, 0],
+            [-1, 0]
+        ]
+        var anim_json = {
+            "cough": [0, 1],
+            "idle": [2],
+            "walk": [2, 3],
+            "fight": [4, 5, 6, 7]
+        }
+        var boat_anim_index = 0
+        var my_cards = [], dealer_cards = []
+        var vert = 0
+        var flippers = []
+        function lose() {
+            top_box.set_callback(false)
+            top_box.set_visible(false)
+            mid_box.set_text("Lose")
+            mid_box.set_callback(start_game)
+            mid_box.set_visible(true)
+        }
+        function win() {
+            top_box.set_callback(false)
+            top_box.set_visible(false)
+            mid_box.set_text("Win")
+            mid_box.set_callback(start_game)
+            mid_box.set_visible(true)
+        }
+        function hit_me() {
+            my_cards.push(cards.take_random())
+            if (cards.min_bj_value(my_cards) > 21) {
+                lose()
+            }
+        }
+        function deal() {
+            top_box.set_visible(false)
+            mid_box.set_visible(false)
+            var total = 0
+            while (total < 17) {
+                var card = cards.take_random()
+                dealer_cards.push(card)
+                total += cards.bj(card)
+            }
+            var player_total = cards.min_bj_value(my_cards)
+            console.log("dealer has " + total)
+            console.log("player has " + player_total)
+            if (total > 21 || player_total > total) {
+                win()
+            }
+            else {
+                lose()
+            }
+        }
+        function start_game() {
+            cards.reset_deck()
+            my_cards = []
+            dealer_cards = []
+
+            top_box.set_text("+1 Card")
+            top_box.set_callback(hit_me)
+            top_box.set_visible(true)
+            mid_box.set_text("Done")
+            mid_box.set_callback(deal)
+            mid_box.set_visible(true)
+            
+            my_cards.push(cards.take_random())
+            my_cards.push(cards.take_random())
+            
+            
+            bgm.play();
+            
+            var ghostie = new sprite(
+                loader.images["assets/GhostShip_Boss.png"],
+                [0, 0],
+                [32, 32],
+                anim_json,
+                15,
+                random_pos()
+            )
+            ghostie.set_speed_x(1)
+            flippers.push(false)
+            ghostie.play_anim("walk", false)
+            
+            ghosties.push(ghostie)
+            
+        }
+        function _tick(time) {
+            for (var i = 0; i < ghosties.length; i++) {
+                if (Math.random() < .006) {
+                    flippers[i] = !flippers[i]
+                    ghosties[i].play_anim("walk", flippers[i])
+                }
+            }
+            ctx.fillRect(0, 0, 64, 64)
+            tilemap.draw(ctx, boat_anim_poses[Math.floor(boat_anim_index)])
+            boat_anim_index += .04
+            if (boat_anim_index >= boat_anim_poses.length) {
+                boat_anim_index -= boat_anim_poses.length
+            }
+            
+            for (ghostie of ghosties) {
+                ghostie.tick_draw(ctx)
+            }
+            mid_box.draw(ctx)
+            top_box.draw(ctx)
+            for (var i = 0; i < my_cards.length; i++) {
+                var card = my_cards[i]
+                ctx.drawImage(loader.images["assets/cards/" + cards.to_string(card) + ".gif"], 50 - 10 * i, 42)
+            }
+            for (var i = 0; i < dealer_cards.length; i++) {
+                var card = dealer_cards[i]
+                ctx.drawImage(loader.images["assets/cards/" + cards.to_string(card) + ".gif"], 3 + 10 * i, 2)
+            }
+            // ctx.drawImage(loader.images["assets/cards/" + cards.to_string(cards.take_random()) + ".gif"], 40, 42)
+            // ctx.drawImage(loader.images["assets/cards/" + cards.to_string(cards.take_random()) + ".gif"], 30, 42)
+            // main_font.print(ctx, "Ahoy!", [5, 5])
+        }
+        function random_pos() {
+            // 0 - 48 (16 * 3)
+            return [
+                Math.floor(16 * (Math.random() + Math.random() * Math.random())),
+                Math.floor(Math.random() * 45)
+            ]
+        }
+        function _go() {
+            loader.add_callback_after_loading(3, () => {
+                console.log("ok")
+                tilemap = new tiling(
+                    loader.images["assets/deck.png"],
+                    [8, 8],
+                    [[0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [4, 5, 3, 4, 5, 3, 4, 5, 4],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [4, 5, 4, 5, 4, 5, 4, 5, 4],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [4, 5, 4, 5, 4, 5, 4, 5, 4],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [4, 5, 4, 5, 4, 5, 4, 5, 4],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [4, 5, 4, 5, 4, 5, 4, 5, 4],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [4, 5, 4, 5, 4, 5, 4, 5, 4],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0]]
+                )
+                main_font = new font(
+                    loader.images["assets/minogram_6x10.png"],
+                    [6, 10],
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-=()[]{}<>/*:#%!?.,'\"@&$"
+                )
+                message_border = new tile9(
+                    loader.images["assets/tile9.png"]
+                )
+                top_box = new text_box(main_font, message_border, 1)
+                mid_box = new text_box(main_font, message_border, 23)
+
+                ghosties = []
+
+                bgm = new Audio('assets/Pirate1_Theme1.mp3')
+                bgm.addEventListener('ended', function() {
+                    this.currentTime = 0
+                    this.play()
+                }, false)
+
+                click_sound = new Audio('assets/Slide_Sharp_01.mp3')
+                click_sound.volume = .2
+                top_box.set_sound(click_sound)
+                mid_box.set_sound(click_sound)
+                card_sound = new Audio('assets/Slide_Soft_00.mp3')
+                
+                top_box.set_visible(false)
+                mid_box.set_text("Start")
+                mid_box.set_callback(start_game)
+                mid_box.set_visible(true)
+
+                setInterval(_tick, 1000/60)
+            })
+            cards = new poker_cards()
+            var files = ["assets/GhostShip_Boss.png", "assets/deck.png", "assets/minogram_6x10.png", "assets/tile9.png"]
+            for (card of cards.deck) {
+                files.push("assets/cards/" + cards.to_string(card) +".gif")
+            }
+            loader.set_resources(files, false)
+
+        }
+        function _setup() {
+            const ctx = document.getElementById("canvas1").getContext("2d")
+        }
+        _go()
+    </script>
+
+    </body>
+</html>
