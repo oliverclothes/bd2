@@ -39,13 +39,19 @@ class asset_loader {
                 }
             }
         }
+        if (-1 in this.callbacks) {
+            for(var callback of this.callbacks[-1]) {
+                callback()
+            }
+        }
         console.log("finished loading")
         this.loader_state = "loaded"
     }
-    add_callback_after_loading(n, callback) {
-        if(!(n in this.callbacks)) {
-            this.callbacks[n] = []
+    // -1 means wait for everything to load first
+    add_callback_after_loading(count, callback) {
+        if(!(count in this.callbacks)) {
+            this.callbacks[count] = []
         }
-        this.callbacks[n].push(callback)
+        this.callbacks[count].push(callback)
     }
 }

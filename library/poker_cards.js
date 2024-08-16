@@ -31,7 +31,13 @@ class poker_cards {
     }
     best_bj_value(cards) {
         var min_value = this.min_bj_value(cards)
-        if (min_value <= 11 && cards.indexOf(1) != -1) {
+        var has_ace = false
+        for (var card of cards) {
+            if (card % 13 == 1) {
+                has_ace = true
+            }
+        }
+        if (min_value <= 11 && has_ace) {
             return min_value + 10
         }
         return min_value

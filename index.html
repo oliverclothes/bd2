@@ -73,43 +73,37 @@
         var my_cards = [], dealer_cards = []
         var vert = 0
         var flippers = []
-        function lose() {
+        function basic_popup(message, callback) {
             top_box.set_callback(false)
             top_box.set_visible(false)
-            mid_box.set_text("Lose")
-            mid_box.set_callback(start_game)
-            mid_box.set_visible(true)
-        }
-        function win() {
-            top_box.set_callback(false)
-            top_box.set_visible(false)
-            mid_box.set_text("Win")
+            mid_box.set_text(message)
             mid_box.set_callback(start_game)
             mid_box.set_visible(true)
         }
         function hit_me() {
             my_cards.push(cards.take_random())
             if (cards.min_bj_value(my_cards) > 21) {
-                lose()
+                basic_popup("Lose", start_game)
             }
         }
         function deal() {
             top_box.set_visible(false)
             mid_box.set_visible(false)
-            var total = 0
-            while (total < 17) {
-                var card = cards.take_random()
-                dealer_cards.push(card)
-                total += cards.bj(card)
+            while (cards.best_bj_value(dealer_cards) < 17) {
+                dealer_cards.push(cards.take_random())
             }
-            var player_total = cards.min_bj_value(my_cards)
-            console.log("dealer has " + total)
+            var player_total = cards.best_bj_value(my_cards)
+            var dealer_total = cards.best_bj_value(dealer_cards)
+            console.log("dealer has " + dealer_total)
             console.log("player has " + player_total)
-            if (total > 21 || player_total > total) {
-                win()
+            if (dealer_total > 21 || player_total > dealer_total) {
+                basic_popup("Win", start_game)
+            }
+            else if (dealer_total == player_total) {
+                basic_popup("Tie", start_game)
             }
             else {
-                lose()
+                basic_popup("Lose", start_game)
             }
         }
         function start_game() {
@@ -184,7 +178,7 @@
             ]
         }
         function _go() {
-            loader.add_callback_after_loading(3, () => {
+            loader.add_callback_after_loading(-1, () => {
                 console.log("ok")
                 tilemap = new tiling(
                     loader.images["assets/deck.png"],
